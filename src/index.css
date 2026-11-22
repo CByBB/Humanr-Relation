@@ -1,0 +1,441 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #12212b;
+  --color-ink-muted: #5a6b74;
+  --color-paper: #eef2f0;
+  --color-paper-deep: #e0e7e4;
+  --color-forest: #163a40;
+  --color-forest-mid: #1f5259;
+  --color-moss: #2a9d8f;
+  --color-sand: #8a9a94;
+  --color-sand-light: #d5e0dc;
+  --color-clay: #c45c4a;
+  --color-glow: #7eb8a8;
+  --color-map-water: #c5d9d6;
+  --color-map-land: #e8ebe6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, #d5e8e4 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, #dce4ea 0%, transparent 50%),
+    var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes hm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hm-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes hm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes hm-draw {
+  from {
+    stroke-dashoffset: 240;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.hm-rise {
+  animation: hm-rise 0.45s ease-out both;
+}
+
+.hm-rise-delay-1 {
+  animation-delay: 0.06s;
+}
+.hm-rise-delay-2 {
+  animation-delay: 0.12s;
+}
+.hm-rise-delay-3 {
+  animation-delay: 0.18s;
+}
+
+.hm-float {
+  animation: hm-float 4s ease-in-out infinite;
+}
+
+.map-marker-selected .map-marker-ring {
+  animation: hm-pulse-ring 1.6s ease-out infinite;
+}
+
+/* —— Panel / drawer motion —— */
+.hm-drawer-backdrop {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgb(18 33 43 / 0%);
+  backdrop-filter: blur(0);
+  transition:
+    background 0.28s ease,
+    backdrop-filter 0.28s ease;
+}
+
+.hm-drawer-backdrop-open {
+  background: rgb(18 33 43 / 35%);
+  backdrop-filter: blur(2px);
+}
+
+.hm-drawer {
+  transform: translate3d(0, 110%, 0);
+  opacity: 0.96;
+  will-change: transform, opacity;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease;
+}
+
+.hm-drawer-open {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .hm-drawer {
+    transform: translate3d(110%, 0, 0);
+  }
+
+  .hm-drawer-open {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .hm-drawer-backdrop-open {
+    background: rgb(18 33 43 / 25%);
+  }
+}
+
+.hm-popover {
+  transform-origin: top center;
+  transform: translate3d(0, -6px, 0) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hm-popover-open {
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-drawer,
+  .hm-drawer-backdrop,
+  .hm-popover {
+    transition: none !important;
+  }
+}
+
+/* Soft vignette over map */
+.map-vignette {
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 50%, rgb(18 33 43 / 12%) 100%),
+    linear-gradient(180deg, rgb(238 242 240 / 35%) 0%, transparent 18%);
+}
+
+.leaflet-container {
+  /* Contain Leaflet stacking so panes (z=200–1000) stay under app chrome */
+  z-index: 0 !important;
+  background: #d9e4e1;
+  font: inherit;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgb(238 242 240 / 85%) !important;
+  border-radius: 8px 0 0 0;
+}
+
+.leaflet-control-zoom a {
+  border: none !important;
+  color: var(--color-ink) !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgb(18 33 43 / 16%) !important;
+}
+
+.hm-marker,
+.hm-cluster {
+  background: transparent !important;
+  border: none !important;
+}
+
+.hm-marker-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 10px 14px rgb(18 33 43 / 28%));
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hm-marker-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  z-index: 2;
+}
+
+.hm-marker-pin {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hm-marker-avatar {
+  display: block;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  overflow: hidden;
+  background: #163a40;
+  box-shadow: inset 0 0 0 1px rgb(18 33 43 / 8%);
+}
+
+.hm-marker-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hm-marker-tip {
+  width: 14px;
+  height: 14px;
+  margin-top: -8px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  box-shadow: 2px 2px 0 rgb(18 33 43 / 6%);
+}
+
+.hm-marker-label {
+  position: absolute;
+  top: -1.65rem;
+  left: 50%;
+  max-width: 140px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(18 33 43 / 90%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hm-marker-btn:hover .hm-marker-label,
+.hm-marker-selected .hm-marker-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.hm-marker-selected .hm-marker-avatar {
+  border-color: #2a9d8f;
+  box-shadow:
+    0 0 0 4px rgb(42 157 143 / 28%),
+    inset 0 0 0 1px rgb(18 33 43 / 8%);
+}
+
+.hm-marker-selected .hm-marker-tip {
+  background: #2a9d8f;
+}
+
+.hm-cluster-btn {
+  border: 3px solid #fff;
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  background: #163a40;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgb(18 33 43 / 28%);
+}
+
+.hm-cluster-faces {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.hm-cluster-faces img {
+  height: 100%;
+  object-fit: cover;
+}
+
+.hm-cluster-count,
+.hm-cluster-count-only {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(22 58 64 / 55%);
+  font-size: 13px;
+}
+
+.hm-cluster-count-only {
+  position: static;
+  background: transparent;
+}
+
+.person-card {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.person-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgb(18 33 43 / 12%);
+}
+
+/* —— Timeline —— */
+.hm-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hm-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  column-gap: 0.9rem;
+  padding-bottom: 1.35rem;
+}
+
+.hm-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.hm-timeline-rail {
+  position: absolute;
+  left: 0.95rem; /* center of 2rem column */
+  top: 1.75rem;
+  bottom: 0.15rem;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-moss) 35%, transparent);
+  border-radius: 999px;
+}
+
+.hm-timeline-marker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hm-timeline-dot {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--color-moss);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-moss) 40%, transparent);
+}
+
+.hm-timeline-badge {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-forest);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgb(18 33 43 / 18%);
+}
+
+.hm-timeline-body {
+  min-width: 0;
+  padding-top: 0.15rem;
+}
+
+.nav-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
